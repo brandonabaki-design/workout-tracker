@@ -57,16 +57,6 @@
                 <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Daily Workout Tracker</h1>
                 <p class="text-slate-500 mt-1">Full-Body High Volume Routine + 20:4 IF</p>
                 <p id="datetime-display" class="text-sm font-semibold text-indigo-600 mt-2"></p>
-                
-                <div class="mt-4 flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 inline-flex print:border-none print:p-0 print:mt-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <label for="fasting-hours" class="text-sm font-bold text-slate-700 uppercase tracking-wider">Fasted Today:</label>
-                    <input type="number" id="fasting-hours" value="20" min="0" max="24" class="no-print border border-slate-300 rounded-md px-2 py-1 w-16 text-center font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" oninput="updateProgress()">
-                    <span id="print-fasting-display" class="print-only text-lg font-bold text-slate-900">20</span>
-                    <span class="text-sm font-medium text-slate-500">hours</span>
-                </div>
             </div>
             <button onclick="window.print()" class="no-print mt-4 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,6 +65,35 @@
                 Save / Print to PDF
             </button>
         </header>
+
+        <!-- Daily Log Section -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 md:gap-8 items-center page-break-avoid">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider w-full md:w-auto mb-2 md:mb-0">Today's Log:</h2>
+            
+            <!-- Weight -->
+            <div class="flex items-center gap-2">
+                <span class="text-slate-500 font-medium">Weight:</span>
+                <input type="number" id="current-weight" value="76" step="0.1" class="no-print border border-slate-300 rounded-md px-2 py-1 w-20 text-center font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" oninput="updateProgress()">
+                <span id="print-weight-display" class="print-only text-lg font-bold text-slate-900">76</span>
+                <span class="text-sm font-medium text-slate-500">kg</span>
+            </div>
+
+            <!-- Fasting -->
+            <div class="flex items-center gap-2">
+                <span class="text-slate-500 font-medium">Fasted:</span>
+                <input type="number" id="fasting-hours" value="20" min="0" max="24" class="no-print border border-slate-300 rounded-md px-2 py-1 w-16 text-center font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" oninput="updateProgress()">
+                <span id="print-fasting-display" class="print-only text-lg font-bold text-slate-900">20</span>
+                <span class="text-sm font-medium text-slate-500">hrs</span>
+            </div>
+
+            <!-- Drinks -->
+            <div class="flex items-center gap-2">
+                <span class="text-slate-500 font-medium">Drinks:</span>
+                <input type="number" id="drink-count" value="3" min="0" step="1" class="no-print border border-slate-300 rounded-md px-2 py-1 w-16 text-center font-bold text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" oninput="updateProgress()">
+                <span id="print-drinks-display" class="print-only text-lg font-bold text-slate-900">3</span>
+                <span class="text-sm font-medium text-slate-500">glasses</span>
+            </div>
+        </div>
 
         <!-- Stats Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -89,25 +108,25 @@
                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Daily Calorie Burn</h3>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-slate-900">~575 <span class="text-sm font-medium text-slate-500">kcal</span></p>
-                    <p class="text-xs text-slate-500 mt-1">200 Cardio + 300 Weights + 75 EPOC</p>
+                    <p class="text-2xl font-bold text-slate-900"><span id="calc-total-burn">~575</span> <span class="text-sm font-medium text-slate-500">kcal</span></p>
+                    <p class="text-xs text-slate-500 mt-1">200 Cardio + <span id="calc-lifting-burn">300</span> Weights + 75 EPOC</p>
                 </div>
             </div>
 
-            <!-- Current Trajectory (With Wine) -->
+            <!-- Current Trajectory (Dynamic) -->
             <div class="bg-white p-5 rounded-xl shadow-sm print-shadow-none border border-slate-100 flex flex-col justify-between">
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="p-2 bg-red-100 text-red-600 rounded-lg">
+                    <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                     </div>
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Progress (With Wine)</h3>
+                    <h3 id="actual-title" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Your Expected Progress</h3>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-slate-900"><span id="daily-wine">0.08</span> <span class="text-sm font-medium text-slate-500">kg/day</span></p>
-                    <p class="text-xs font-semibold text-slate-600 mt-1">~<span id="weekly-wine">0.5 - 0.7</span> kg/wk</p>
-                    <p class="text-xs text-slate-500 mt-1">Liver prioritizes burning alcohol over belly fat.</p>
+                    <p id="daily-actual" class="text-2xl font-bold text-slate-900">0.08 kg loss/day</p>
+                    <p id="weekly-actual" class="text-xs font-semibold text-slate-600 mt-1">~0.5 - 0.7 kg loss/wk</p>
+                    <p class="text-xs text-slate-500 mt-1">Calculated from your log above.</p>
                 </div>
             </div>
 
@@ -119,12 +138,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                         </svg>
                     </div>
-                    <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">Progress (NO WINE)</h3>
+                    <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">Optimal (0 Drinks)</h3>
                 </div>
                 <div>
                     <p class="text-2xl font-bold text-blue-900"><span id="daily-no-wine">0.15</span> <span class="text-sm font-medium text-blue-700">kg/day</span></p>
                     <p class="text-xs font-semibold text-blue-800 mt-1">~<span id="weekly-no-wine">0.9 - 1.2</span> kg/wk</p>
-                    <p class="text-xs text-blue-700 mt-1">Saves 3,150 kcal/week. Fasting burns pure belly fat.</p>
+                    <p class="text-xs text-blue-700 mt-1">Saves liquid calories. Fasting burns pure belly fat.</p>
                 </div>
             </div>
         </div>
@@ -354,32 +373,65 @@
                 toggleStrikeThrough(cb);
             });
             document.getElementById('fasting-hours').value = 20;
+            document.getElementById('drink-count').value = 3;
+            // Weight remains the same as yesterday to avoid retyping
             updateProgress();
         }
 
-        // Calculate and update progress based on fasting hours
+        // Calculate and update progress based on all inputs
         function updateProgress() {
             let hours = parseFloat(document.getElementById('fasting-hours').value) || 0;
+            let weight = parseFloat(document.getElementById('current-weight').value) || 76;
+            let drinks = parseFloat(document.getElementById('drink-count').value) || 0;
+            
             // Prevent absurd calculations
-            if (hours < 0) hours = 0;
-            if (hours > 24) hours = 24;
+            if (hours < 0) hours = 0; if (hours > 24) hours = 24;
+            if (weight < 40) weight = 40;
+            if (drinks < 0) drinks = 0;
             
+            // Update Print Displays
             document.getElementById('print-fasting-display').textContent = hours;
+            document.getElementById('print-weight-display').textContent = weight;
+            document.getElementById('print-drinks-display').textContent = drinks;
 
-            // Base daily fat loss assuming 20 hours fasting and this specific workout routine
-            const baseDailyWine = 0.08; 
+            // Dynamic Calorie Burn based on Weight (approx 4 kcal per kg for high volume lifting)
+            const liftingBurn = Math.round(weight * 4); 
+            const totalBurn = 200 + liftingBurn + 75; // Cardio + Lifting + EPOC
+            document.getElementById('calc-total-burn').textContent = `~${totalBurn}`;
+            document.getElementById('calc-lifting-burn').textContent = liftingBurn;
+
+            // Base daily fat loss assuming 20 hours fasting, 0 drinks, and this specific workout routine
             const baseDailyNoWine = 0.15; 
-            
-            // Multiplier: scales down if you fast less, scales up slightly if you fast more
             const multiplier = hours / 20;
-            
-            const dailyWine = baseDailyWine * multiplier;
             const dailyNoWine = baseDailyNoWine * multiplier;
-
-            // Update DOM Elements
-            document.getElementById('daily-wine').textContent = dailyWine.toFixed(2);
-            document.getElementById('weekly-wine').textContent = (dailyWine * 7 * 0.8).toFixed(1) + ' - ' + (dailyWine * 7 * 1.2).toFixed(1);
             
+            // Drink penalty: ~0.0233kg fat equivalent per glass of wine
+            const drinkPenalty = drinks * 0.0233; 
+            const actualDaily = dailyNoWine - drinkPenalty;
+
+            // Update "Your Expected Progress" UI
+            const actualDailyEl = document.getElementById('daily-actual');
+            const actualWeeklyEl = document.getElementById('weekly-actual');
+            const actualTitleEl = document.getElementById('actual-title');
+            
+            if (actualDaily > 0) {
+                actualDailyEl.textContent = actualDaily.toFixed(2) + " kg loss/day";
+                actualDailyEl.className = "text-2xl font-bold text-emerald-600";
+                actualWeeklyEl.textContent = "~" + (actualDaily * 7 * 0.8).toFixed(1) + " - " + (actualDaily * 7 * 1.2).toFixed(1) + " kg loss/wk";
+                actualTitleEl.textContent = "Expected Progress";
+            } else if (actualDaily < 0) {
+                actualDailyEl.textContent = "+" + Math.abs(actualDaily).toFixed(2) + " kg gain/day";
+                actualDailyEl.className = "text-2xl font-bold text-red-600";
+                actualWeeklyEl.textContent = "~+" + (Math.abs(actualDaily) * 7 * 0.8).toFixed(1) + " - " + (Math.abs(actualDaily) * 7 * 1.2).toFixed(1) + " kg gain/wk";
+                actualTitleEl.textContent = "Warning: Caloric Surplus";
+            } else {
+                actualDailyEl.textContent = "0.00 kg/day";
+                actualDailyEl.className = "text-2xl font-bold text-slate-600";
+                actualWeeklyEl.textContent = "Maintenance (No loss/gain)";
+                actualTitleEl.textContent = "Expected Progress";
+            }
+            
+            // Update Optimal Box
             document.getElementById('daily-no-wine').textContent = dailyNoWine.toFixed(2);
             document.getElementById('weekly-no-wine').textContent = (dailyNoWine * 7 * 0.8).toFixed(1) + ' - ' + (dailyNoWine * 7 * 1.2).toFixed(1);
         }
