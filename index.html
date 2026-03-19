@@ -124,6 +124,14 @@
             <div class="flex flex-wrap gap-4 md:gap-6 items-center">
                 <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider w-full md:w-auto">Today:</h2>
                 
+                <!-- Diet Calories -->
+                <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1">
+                    <span class="text-emerald-800 font-medium text-sm">Diet:</span>
+                    <input type="number" id="food-calories" value="2000" step="50" class="no-print border border-emerald-300 rounded-md px-2 py-0.5 w-20 text-center text-sm font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" oninput="updateProgress()">
+                    <span id="print-food-display" class="print-only text-md font-bold text-emerald-900">2000</span>
+                    <span class="text-sm font-medium text-emerald-600">kcal</span>
+                </div>
+
                 <!-- Dumbbell Weight -->
                 <div class="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1">
                     <span class="text-blue-800 font-medium text-sm">Dumbbells:</span>
@@ -223,7 +231,7 @@
                 <div>
                     <p id="daily-actual" class="text-xl font-bold text-slate-900">0.00 kg/day</p>
                     <p id="weekly-actual" class="text-xs font-semibold text-slate-600 mt-1">Maintenance</p>
-                    <p class="text-xs text-slate-500 mt-1">Based on workout & drinks.</p>
+                    <p class="text-xs text-slate-500 mt-1">Based on (Burned - Eaten).</p>
                 </div>
             </div>
 
@@ -524,6 +532,7 @@
                 const labelText = cb.nextElementSibling;
                 labelText.classList.remove('checked-text');
             });
+            document.getElementById('food-calories').value = 2000;
             document.getElementById('fasting-hours').value = 20;
             document.getElementById('drink-count').value = 0;
             document.getElementById('workout-notes').value = '';
@@ -553,6 +562,7 @@
             let height = parseFloat(document.getElementById('user-height').value) || 165;
             let weight = parseFloat(document.getElementById('current-weight').value) || 76;
             
+            let foodCalories = parseFloat(document.getElementById('food-calories').value) || 2000;
             let dumbbellWeight = parseFloat(document.getElementById('dumbbell-weight').value) || 5;
             let hours = parseFloat(document.getElementById('fasting-hours').value) || 0;
             let drinks = parseFloat(document.getElementById('drink-count').value) || 0;
@@ -565,12 +575,14 @@
             if (dumbbellWeight < 0) dumbbellWeight = 0;
             if (age < 10) age = 10;
             if (height < 100) height = 100;
+            if (foodCalories < 0) foodCalories = 0;
             
             // Sync print versions
             document.getElementById('print-gender-display').textContent = gender;
             document.getElementById('print-age-display').textContent = age;
             document.getElementById('print-height-display').textContent = height;
             document.getElementById('print-weight-display').textContent = weight;
+            document.getElementById('print-food-display').textContent = foodCalories;
             document.getElementById('print-dumbbell-display').textContent = dumbbellWeight;
             document.getElementById('print-fasting-display').textContent = hours;
             document.getElementById('print-drinks-display').textContent = drinks;
@@ -612,13 +624,17 @@
             const epoc = (checkedBoxesCount > 0) ? 75 : 0;
             
             // Lifting formula scaling with dumbbell weight + basic body weight resistance
-            // Uses standard body weight factor (0.1) + dumbbell scaling factor (1.5)
             const liftingBurnPerExercise = (weight * 0.1) + (dumbbellWeight * 1.5);
             const currentLiftingBurn = Math.round(checkedLiftingCount * liftingBurnPerExercise);
             const maxPotentialLiftingBurn = Math.round(liftingBoxes.length * liftingBurnPerExercise);
             
             const activeBurn = currentLiftingBurn + cardioBurn + epoc;
-            const tdee = bmr + activeBurn; // Total Daily Energy Expenditure
+            
+            // Fasting Metabolic Bonus (approx 15 kcal fat oxidation bump per hour fasted over 12 hours)
+            const fastingBonus = hours > 12 ? Math.round((hours - 12) * 15) : 0; 
+
+            // Total Daily Energy Expenditure (including the fasting bonus)
+            const tdee = bmr + activeBurn + fastingBonus; 
             const maxPotentialBurn = maxPotentialLiftingBurn + 400 + 75; // 400 max cardio, 75 max EPOC
 
             // Update UI
@@ -640,42 +656,47 @@
             document.getElementById('cal-percent-text').textContent = `${activeBurn} / ${maxPotentialBurn} kcal`;
             document.getElementById('cal-bar').style.width = `${calPercent}%`;
 
-            // 5. Calculate Weight Loss Trajectory
-            const burnRatio = 0.0002608;
-            const fastingMultiplier = hours / 20;
+            // 5. Calculate Weight Loss Trajectory (True CICO)
+            const drinkCalories = drinks * 150; // Approx 150 kcal per glass of wine
+            const totalConsumed = foodCalories + drinkCalories;
             
-            // Expected loss based on actual burned active calories today + fasting impact
-            const dailyNoWine = activeBurn * burnRatio * fastingMultiplier;
+            // Biological Standard: 7700 kcal deficit = 1 kg of fat loss
+            const actualDeficit = tdee - totalConsumed; 
+            const optimalDeficit = tdee - foodCalories; // Deficit if drinks = 0
             
-            // Drink penalty: ~0.0233kg fat equivalent per glass of wine
-            const drinkPenalty = drinks * 0.0233; 
-            const actualDaily = dailyNoWine - drinkPenalty;
+            const actualDaily = actualDeficit / 7700;
+            const optimalDaily = optimalDeficit / 7700;
 
             // Update "Expected Progress" UI
             const actualDailyEl = document.getElementById('daily-actual');
             const actualWeeklyEl = document.getElementById('weekly-actual');
             const actualTitleEl = document.getElementById('actual-title');
             
-            if (actualDaily > 0 && checkedBoxesCount > 0) {
-                actualDailyEl.textContent = actualDaily.toFixed(2) + " kg loss/day";
+            if (actualDaily > 0) {
+                actualDailyEl.textContent = actualDaily.toFixed(3) + " kg loss/day";
                 actualDailyEl.className = "text-xl font-bold text-emerald-600";
-                actualWeeklyEl.textContent = "~" + (actualDaily * 7 * 0.8).toFixed(1) + " - " + (actualDaily * 7 * 1.2).toFixed(1) + " kg loss/wk";
+                actualWeeklyEl.textContent = "~" + (actualDaily * 7 * 0.8).toFixed(2) + " - " + (actualDaily * 7 * 1.2).toFixed(2) + " kg loss/wk";
                 actualTitleEl.textContent = "Expected Progress";
             } else if (actualDaily < 0) {
-                actualDailyEl.textContent = "+" + Math.abs(actualDaily).toFixed(2) + " kg gain/day";
+                actualDailyEl.textContent = "+" + Math.abs(actualDaily).toFixed(3) + " kg gain/day";
                 actualDailyEl.className = "text-xl font-bold text-red-600";
-                actualWeeklyEl.textContent = "~+" + (Math.abs(actualDaily) * 7 * 0.8).toFixed(1) + " - " + (Math.abs(actualDaily) * 7 * 1.2).toFixed(1) + " kg gain/wk";
+                actualWeeklyEl.textContent = "~+" + (Math.abs(actualDaily) * 7 * 0.8).toFixed(2) + " - " + (Math.abs(actualDaily) * 7 * 1.2).toFixed(2) + " kg gain/wk";
                 actualTitleEl.textContent = "Warning: Caloric Surplus";
             } else {
-                actualDailyEl.textContent = "0.00 kg/day";
+                actualDailyEl.textContent = "0.000 kg/day";
                 actualDailyEl.className = "text-xl font-bold text-slate-600";
                 actualWeeklyEl.textContent = "Maintenance";
                 actualTitleEl.textContent = "Expected Progress";
             }
             
             // Update Optimal Box
-            document.getElementById('daily-no-wine').textContent = dailyNoWine.toFixed(2);
-            document.getElementById('weekly-no-wine').textContent = (dailyNoWine * 7 * 0.8).toFixed(1) + ' - ' + (dailyNoWine * 7 * 1.2).toFixed(1);
+            if (optimalDaily > 0) {
+                document.getElementById('daily-no-wine').textContent = optimalDaily.toFixed(3);
+                document.getElementById('weekly-no-wine').textContent = (optimalDaily * 7 * 0.8).toFixed(2) + ' - ' + (optimalDaily * 7 * 1.2).toFixed(2);
+            } else {
+                document.getElementById('daily-no-wine').textContent = "0.000";
+                document.getElementById('weekly-no-wine').textContent = "Maintenance";
+            }
         }
 
         // Initialize everything on load
